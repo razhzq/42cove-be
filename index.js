@@ -11,11 +11,14 @@ const { Server } = require('socket.io');
 // *** env var ***
 const port = process.env.PORT;
 
+// *** server init ***
 const app = express();
 app.use(bodyParser.json());
 app.use(cors({
     origin: "*"
 }))
+
+// *** express & socket init ***
 
 const server = createServer(app);
 const io = new Server(server, {
@@ -24,12 +27,19 @@ const io = new Server(server, {
     },
     methods: ["GET", "POST"]
   });
+const connectedUser = {};
 
 io.on('connection', (socket) => {
-    console.log('user connected');
+    console.log(`A user connected with socket id: ${socket.id}`);
     socket.on('message', (data) => {
         console.log(data);
         socket.broadcast.emit('message', data)
+    })
+    socket.on('loggedin-user', (data) => {
+        connectedUser[data.userId] = socket.id;
+    });
+    socket.on('private-msg', (data) => {
+        io.to(connectedUser[data.receiverId]).emit('private-msg', data);
     })
 })
 
